@@ -2,6 +2,17 @@
 
 All notable changes to MyGo Music are written down here. Versions follow [Semantic Versioning](https://semver.org).
 
+## [0.1.26] - 2026-11-25
+
+### Added
+
+- Plugins in the sidebar lists the plugins others published on GitHub, a page at a time, with a search, to install with a click. A plugin just installed shows on the Installed tab, scrolled to and marked.
+- Plugins can name an icon in `plugin.json`. One installed from GitHub without one shows its owner's picture.
+
+### Changed
+
+- The plugins installed moved from Settings to the Plugins page in the main window, a card each, with what each asks for under it. A plugin that needs setting up takes you there.
+
 ## [0.1.25] - 2026-11-14
 
 ### Added
@@ -247,6 +258,7 @@ All notable changes to MyGo Music are written down here. Versions follow [Semant
 
 The first release: a native music player that plays your local files and gets everything else from plugins.
 
+[0.1.26]: https://github.com/egoist/mygo-music/compare/v0.1.25...v0.1.26
 [0.1.25]: https://github.com/egoist/mygo-music/compare/v0.1.24...v0.1.25
 [0.1.24]: https://github.com/egoist/mygo-music/compare/v0.1.23...v0.1.24
 [0.1.23]: https://github.com/egoist/mygo-music/compare/v0.1.22...v0.1.23
