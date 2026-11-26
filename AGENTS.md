@@ -5,6 +5,7 @@
 - Publish at most one user-facing version per calendar day in Asia/Shanghai.
 - Further changes on the same day update that day's release rather than creating another version number. Keep the released source tag and APK matched.
 - Increase Android versionCode for each replacement build so it can cover-install earlier builds, even when the displayed version stays the same.
+- Keep GitHub Release notes focused on user-facing functional changes only; do not mention personal customizations such as QR codes or tipping/rewards.
 
 ## Tests
 
