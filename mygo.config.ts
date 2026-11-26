@@ -5,7 +5,7 @@ export default ({ command }: { command: string }) => ({
   name: "MyGo Music",
   identifier: "net.bieji.mygo.n7",
   slug: "mygo-music",
-  version: "0.1.12",
+  version: "0.1.13",
   out: "build",
   urlSchemes: [command === "dev" ? "mygo-music-dev" : "mygo-music"],
   updates: {
@@ -14,7 +14,7 @@ export default ({ command }: { command: string }) => ({
   },
   android: {
     minSdk: 26,
-    versionCode: 143,
+    versionCode: 144,
     permissions: ["READ_EXTERNAL_STORAGE", "READ_MEDIA_AUDIO"],
   },
   macos: {

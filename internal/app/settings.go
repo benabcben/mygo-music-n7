@@ -112,7 +112,8 @@ func n7DefaultSettings(s settings) settings {
 	s.PlayerStyle = "vinyl"
 	s.StageSparks = true
 	s.Volume = 1.0
-	s.Normalize = true
+	s.Normalize = false
+	s.HotComments = true
 	s.Fog = true
 	return s
 }
