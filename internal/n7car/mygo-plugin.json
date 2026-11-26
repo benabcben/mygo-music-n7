@@ -1,0 +1,1 @@
+{"mobile":{"id":"n7car","android":{"sources":["android/*.kt"],"class":"N7CarPlugin","application":["<receiver android:name=\"dev.mygo.N7MediaButtonReceiver\" android:exported=\"false\"><intent-filter><action android:name=\"android.intent.action.MEDIA_BUTTON\" /></intent-filter></receiver>"]}}}

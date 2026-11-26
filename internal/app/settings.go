@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"os"
 	"path/filepath"
+	"runtime"
+	"slices"
 	"time"
 
 	"github.com/egoist/mygo"
@@ -14,6 +16,7 @@ import (
 // settings are the listener's choices, kept in settings.json in the user
 // data directory.
 type settings struct {
+	CarPresetVersion int `json:"carPresetVersion,omitempty"`
 	// Language is what the app speaks: i18n.English or i18n.Chinese, or
 	// i18n.System for the system's.
 	Language string `json:"language"`
@@ -91,7 +94,27 @@ type settings struct {
 }
 
 func defaultSettings() settings {
-	return settings{Language: i18n.System, NotchActivity: true, Quality: "high", Appearance: "system", Volume: 0.8, Normalize: true, AppIcon: "dock-and-menubar", CacheMB: 2048}
+	s := settings{Language: i18n.System, NotchActivity: true, Quality: "high", Appearance: "system", Volume: 0.8, Normalize: true, AppIcon: "dock-and-menubar", CacheMB: 2048}
+	if runtime.GOOS == "android" {
+		s = n7DefaultSettings(s)
+	}
+	return s
+}
+
+// n7DefaultSettings mirrors the listener's Mac preferences on a fresh car install.
+func n7DefaultSettings(s settings) settings {
+	s.Source = "netease"
+	s.Quality = "lossless"
+	s.GrowFromCover = true
+	s.Smoke = true
+	s.LyricsStage = false
+	s.StageStyle = "tilt"
+	s.PlayerStyle = "vinyl"
+	s.StageSparks = true
+	s.Volume = 1.0
+	s.Normalize = true
+	s.Fog = true
+	return s
 }
 
 func settingsPath() (string, error) {
@@ -111,7 +134,29 @@ func loadSettings() settings {
 		}
 		s.path = path
 	}
+	if runtime.GOOS == "android" && applyCarPreset(&s) {
+		_ = s.save()
+	}
 	return s
+}
+
+// applyCarPreset runs once on upgrade, then keeps later user changes.
+func applyCarPreset(s *settings) bool {
+	if s.CarPresetVersion >= 1 {
+		return false
+	}
+	s.CarPresetVersion = 1
+	s.Volume = 1
+	if !slices.Contains(s.DisabledPlugins, "lizhi") {
+		s.DisabledPlugins = append(s.DisabledPlugins, "lizhi")
+	}
+	if s.Source == "jay-chou" || s.Source == "lizhi" {
+		s.Source = "netease"
+	}
+	if s.Source == "qqmusic" {
+		s.Source = "qqmusic-qr"
+	}
+	return true
 }
 
 // save keeps the settings where they were loaded from; defaults that were

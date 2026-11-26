@@ -12,7 +12,23 @@ import (
 
 const sidebarWidth = 232
 
+func sideWidth(w float32) float32 {
+	if runtime.GOOS == "android" && w < 900 {
+		return 160
+	}
+	return sidebarWidth
+}
+func currentSideWidth(c *ui.Context) float32 { w, _ := c.Size(); return sideWidth(w) }
+func carNarrow(c *ui.Context) bool           { w, _ := c.Size(); return runtime.GOOS == "android" && w < 900 }
+
 func (a *app) view(c *ui.Context) {
+	if runtime.GOOS == "android" {
+		ui.MobilePointerDown = func() {
+			if a.nowPlaying {
+				a.carControlsUntil = time.Now().Add(4 * time.Second)
+			}
+		}
+	}
 	t := *c.Theme()
 	a.pal = paletteFor(&t)
 	p := a.pal
@@ -55,7 +71,7 @@ func (a *app) view(c *ui.Context) {
 				// trackList), so it shows again as it was.
 				return
 			}
-			side := ui.Column(c).Width(sidebarWidth)
+			side := ui.Column(c).Width(currentSideWidth(c))
 			if !c.Vibrancy() {
 				side.Background(p.sidebar)
 			}
@@ -663,9 +679,9 @@ func (a *app) sourceSwitcher(c *ui.Context) {
 	b := sel.Trigger.Height(height).PaddingX(7).Gap(4).Radius(7).AlignItems(ui.Center).
 		FocusRing(false).Label(T("Plugin"))
 	if left := c.TitleBar().Left; left > 0 {
-		b.Absolute().Top((topBar(c) - height) / 2).Left(left + 12).MaxWidth(sidebarWidth - left - 22)
+		b.Absolute().Top((topBar(c) - height) / 2).Left(left + 12).MaxWidth(currentSideWidth(c) - left - 22)
 	} else {
-		b.AlignSelf(ui.Start).Margin(0, 0, 4, -7).MaxWidth(sidebarWidth - 28)
+		b.AlignSelf(ui.Start).Margin(0, 0, 4, -7).MaxWidth(currentSideWidth(c) - 28)
 	}
 	color := p.muted
 	if b.Hovered() || sel.Open() {
@@ -678,7 +694,7 @@ func (a *app) sourceSwitcher(c *ui.Context) {
 	})
 	pop := popoverColors(p.dark)
 	sel.Popup(func(panel ui.Element) {
-		panel.Margin(6, 0, 0, 0).Padding(5).Gap(1).MinWidth(180).MaxWidth(sidebarWidth+60).
+		panel.Margin(6, 0, 0, 0).Padding(5).Gap(1).MinWidth(180).MaxWidth(currentSideWidth(c)+60).
 			Radius(12).Background(pop.fill).Border(0.5, pop.edge).Shadow(0, 8, 24, -4, ui.RGBA(0, 0, 0, 0.2))
 		for _, lib := range a.libs {
 			name := lib.name()

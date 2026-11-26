@@ -36,6 +36,7 @@ type wallState struct {
 	shown ui.Point // where Draggable showed it in the last frame
 	// The song the wall last brought into view, 0 until it shows.
 	track string
+	tap   ui.Point
 }
 
 // wallLayout is how the wall lays out its covers in an area: as many
@@ -233,6 +234,12 @@ func (a *app) wall(c *ui.Context, y, w, h, top, foot, frost float32) {
 			Size(float32(l.cols)*wallPitch, float32(l.rows)*wallPitch).
 			Translate(ws.pan.X, ws.pan.Y).
 			Draggable(&ws.off, ui.DraggableOptions{Bounds: &bounds, Snap: func(p ui.Point) ui.Point { return p }, Animation: wallGlide})
+		plane.HandleInput(func(ev ui.InputEvent) bool {
+			if ev.Kind == ui.InputPointerDown {
+				ws.tap = ui.Point{X: ev.X, Y: ev.Y}
+			}
+			return false
+		})
 		ws.shown = plane.DragOffset()
 		at := addPoint(ws.shown, ws.pan)
 		// The rows sway while the song plays, and settle while it is paused.
@@ -248,7 +255,12 @@ func (a *app) wall(c *ui.Context, y, w, h, top, foot, frost float32) {
 		// under the controls, nor deep in the frost, nor one a control over
 		// it takes the pointer from.
 		pointRow, pointX := -1, float32(0)
-		if px, py, over := plane.PointerPosition(); over && plane.Hovered() && !plane.Dragging() && px >= 0 && py >= 0 &&
+		clicked := plane.Clicked()
+		px, py, over := plane.PointerPosition()
+		if clicked {
+			px, py, over = ws.tap.X, ws.tap.Y, true
+		}
+		if over && (plane.Hovered() || clicked) && !plane.Dragging() && px >= 0 && py >= 0 &&
 			at.Y+py > frost/2 && at.Y+py < h-foot && py-float32(int(py/wallPitch))*wallPitch < wallTile {
 			pointRow, pointX = int(py/wallPitch), px
 		}
@@ -306,7 +318,7 @@ func (a *app) wall(c *ui.Context, y, w, h, top, foot, frost float32) {
 				})
 			}
 		})
-		if plane.Clicked() && hover >= 0 && hover != playing && !queue[hover].Unavailable {
+		if clicked && hover >= 0 && hover != playing && !queue[hover].Unavailable {
 			pl.Jump(hover)
 		}
 	})

@@ -3,14 +3,19 @@
 // scheme of its own, for the installed app to keep mygo-music:// links.
 export default ({ command }: { command: string }) => ({
   name: "MyGo Music",
-  identifier: "dev.egoist.music",
+  identifier: "net.bieji.mygo.n7",
   slug: "mygo-music",
-  version: "0.1.25",
+  version: "0.1.10",
   out: "build",
   urlSchemes: [command === "dev" ? "mygo-music-dev" : "mygo-music"],
   updates: {
     publicKey: "WzJsOGNIuf6mcEqo5ff8jub+NoQQOEk4JXreLPYjgyQ=",
     github: "egoist/mygo-music",
+  },
+  android: {
+    minSdk: 26,
+    versionCode: 141,
+    permissions: ["READ_EXTERNAL_STORAGE", "READ_MEDIA_AUDIO"],
   },
   macos: {
     icon: "icon/AppIcon.icon",

@@ -1,0 +1,43 @@
+{
+  "id": "youtube-music",
+  "name": "YouTube Music",
+  "version": "0.1.1",
+  "minAppVersion": "0.1.8",
+  "main": "index.js",
+  "playback": "stream",
+  "permissions": {
+    "network": [
+      "music.youtube.com",
+      "s.youtube.com",
+      "api.betterlyrics.org",
+      "lrclib.net",
+      "oauth2.googleapis.com",
+      "www.googleapis.com"
+    ]
+  },
+  "settings": [
+    { "key": "google_client_id", "label": "Google OAuth Client ID" },
+    { "key": "google_client_secret", "label": "Google OAuth Client Secret", "type": "password" }
+  ],
+  "navigation": [
+    {
+      "builtin": "home"
+    },
+    {
+      "title": "Charts",
+      "page": "charts",
+      "icon": "chart"
+    },
+    {
+      "title": "New Releases",
+      "page": "new",
+      "icon": "star"
+    },
+    {
+      "builtin": "stations"
+    },
+    {
+      "builtin": "liked"
+    }
+  ]
+}

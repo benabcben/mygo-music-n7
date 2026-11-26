@@ -8,6 +8,7 @@ import (
 	"runtime/debug"
 	"slices"
 	"sync/atomic"
+	"time"
 
 	"github.com/egoist/mygo"
 	"github.com/egoist/mygo/ui"
@@ -120,23 +121,24 @@ type app struct {
 
 	suggestions suggestState // what the search field's query may be after
 
-	nowPlaying  bool
-	npOpen      bool    // Now Playing as it last showed: open or not
-	npT         float32 // how far open Now Playing last showed, 0 to 1
-	npShift     float32 // how far down it last showed, pulled
-	npPull      float32 // how far the pointer has pulled it down
-	npHeld      bool    // whether the pointer presses on it, to pull it
-	npStill     bool    // whether it comes and goes in place, sliding or fading, rather than out of the bar's cover
-	npFrom      ui.Rect // the player bar's cover, which it grows out of
-	npPane      int     // paneLyrics, paneQueue, paneStage, paneComments or paneShow
-	lyricScroll ui.ScrollState
-	lyricGlide  lyricGlide
-	lyricAt     int
-	lyricTrack  string
-	queueList   ui.ListState
-	queueAt     int // the row of the queue pane last scrolled to, -1 while it is hidden
-	comments    commentState
-	tabCount    rollState // the count on the comments' tab, as it rolls
+	nowPlaying       bool
+	npOpen           bool    // Now Playing as it last showed: open or not
+	npT              float32 // how far open Now Playing last showed, 0 to 1
+	npShift          float32 // how far down it last showed, pulled
+	npPull           float32 // how far the pointer has pulled it down
+	npHeld           bool    // whether the pointer presses on it, to pull it
+	npStill          bool    // whether it comes and goes in place, sliding or fading, rather than out of the bar's cover
+	npFrom           ui.Rect // the player bar's cover, which it grows out of
+	npPane           int     // paneLyrics, paneQueue, paneStage, paneComments or paneShow
+	carControlsUntil time.Time
+	lyricScroll      ui.ScrollState
+	lyricGlide       lyricGlide
+	lyricAt          int
+	lyricTrack       string
+	queueList        ui.ListState
+	queueAt          int // the row of the queue pane last scrolled to, -1 while it is hidden
+	comments         commentState
+	tabCount         rollState // the count on the comments' tab, as it rolls
 
 	radioStarting string // the radio asked for its first songs, or ""
 	stationAt     int    // which of a few stations their switch has chosen
@@ -232,9 +234,29 @@ func (a *app) makeSources() {
 	builtIn := newLibrary(a.local)
 	a.allLibs = []*library{builtIn}
 	plugin.SetOpenURL(mygo.Shell.OpenExternal)
-	plugin.SetAppVersion(mygo.App.Version())
+	compatVersion := mygo.App.Version()
+	if runtime.GOOS == "android" {
+		// The car release has its own version sequence. Plugins declare
+		// compatibility with the upstream app, not that release sequence.
+		compatVersion = "0.1.31"
+	}
+	plugin.SetAppVersion(compatVersion)
 	plugin.SetWebSignIn(a.webSignIn)
+	if runtime.GOOS == "android" {
+		if err := seedN7Plugins(pluginsDir()); err != nil {
+			log.Printf("bundled plugins: %v", err)
+		}
+	}
 	a.plugins = plugin.Discover(pluginsDir(), userDataDir("plugin-data"))
+	if runtime.GOOS == "android" {
+		a.plugins = slices.DeleteFunc(a.plugins, func(p *plugin.Plugin) bool {
+			retired := p.Info().ID == "jay-chou" || p.Info().ID == "qqmusic"
+			if retired {
+				p.Close()
+			}
+			return retired
+		})
+	}
 	a.headers = &headerPlugins{}
 	music.ImageHeaders = a.headers.image
 	for _, p := range a.plugins {
@@ -245,6 +267,11 @@ func (a *app) makeSources() {
 	}
 	a.enabledChanged()
 	a.library = a.libs[0]
+	if runtime.GOOS == "android" && a.settings.Source == "" {
+		if lib := a.libOf("netease"); lib != nil {
+			a.library = lib
+		}
+	}
 	if lib := a.libOf(a.settings.Source); lib != nil {
 		a.library = lib
 	}
@@ -321,6 +348,16 @@ func (a *app) closeSources() {
 
 // Run runs the app until it quits.
 func Run() error {
+	if runtime.GOOS == "android" {
+		// Keep the existing app-private data when the display name changes.
+		if dir, err := os.UserConfigDir(); err == nil {
+			mygo.App.SetPath(mygo.PathUserData, filepath.Join(dir, "MyGo Music N7"))
+		}
+		if dir, err := os.UserCacheDir(); err == nil {
+			mygo.App.SetPath(mygo.PathCache, filepath.Join(dir, "MyGo Music N7"))
+		}
+		mygo.SystemBars.SetHidden(true)
+	}
 	// Opening the app again shows the running one's window: Linux and
 	// Windows would start another, with a second tray icon. Asked before
 	// anything else, so the second one touches no data on its way out.
@@ -334,7 +371,9 @@ func Run() error {
 		queueAt:     -1,
 		cacheUsed:   -1,
 	}
-	a.useUpdater(i18n.Resolve(loadSettings().Language, systemLanguages()))
+	if runtime.GOOS != "android" {
+		a.useUpdater(i18n.Resolve(loadSettings().Language, systemLanguages()))
+	}
 	mygo.App.WhenReady(func() {
 		a.settings = loadSettings()
 		a.settings.applyAppearance()

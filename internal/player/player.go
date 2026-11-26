@@ -64,7 +64,7 @@ type Player struct {
 	track   *music.Track
 	out     *audio.Player
 	stream  stream
-	watch   *watched // stream, as out plays it
+	watch   *watched      // stream, as out plays it
 	info    *music.Stream // what the current track streams
 	fade    fader
 	gain    float64 // the current track's normalizing gain
@@ -124,6 +124,7 @@ func New(post func(func())) *Player {
 		}
 		p.post(func() {})
 	})
+	initN7Media(p)
 	return p
 }
 
@@ -134,6 +135,7 @@ func (p *Player) sync() {
 	}
 	if p.track == nil {
 		mygo.NowPlaying.Clear()
+		updateN7Media()
 		return
 	}
 	state := mygo.PlaybackPaused
@@ -141,6 +143,7 @@ func (p *Player) sync() {
 		state = mygo.PlaybackPlaying
 	}
 	mygo.NowPlaying.SetPlayback(state, p.Position())
+	updateN7Media()
 }
 
 // announce shows the system the track, and its cover once loaded.
@@ -159,6 +162,7 @@ func (p *Player) announce(t *music.Track, artwork []byte) {
 		State:    state,
 		Commands: mygo.MediaPlay | mygo.MediaPause | mygo.MediaNext | mygo.MediaPrevious | mygo.MediaSeek,
 	})
+	updateN7Media()
 }
 
 func (p *Player) ended() {

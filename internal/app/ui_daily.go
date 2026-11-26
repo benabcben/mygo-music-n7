@@ -26,7 +26,7 @@ func (a *app) featureCard(c *ui.Context, sec *music.Section, pageID string, at i
 		return
 	}
 	w, _ := c.Size()
-	inner := w - sidebarWidth - 2*pagePad
+	inner := w - sideWidth(w) - 2*pagePad
 	still := c.Preferences().ReduceMotion
 	art := a.art.get(sized(songs[0].Album.ImageURL, 600), true)
 	card := ui.ButtonBase(c.Key("daily")).Height(dailyHeight).Radius(dailyRadius).FocusRing(false).Label(sec.Title).TextColor(white)

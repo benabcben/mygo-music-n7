@@ -7,6 +7,7 @@ import (
 	"github.com/egoist/mygo/plugins/glass"
 	"github.com/egoist/mygo/ui"
 
+	"mygo-music/internal/music"
 	"mygo-music/internal/player"
 )
 
@@ -375,6 +376,10 @@ func (a *app) playerBar(c *ui.Context) {
 	edge := ui.Box(c.Key("bottom-edge")).Absolute().Left(0).Right(0).Bottom(0).Height(playerBarHeight).
 		Material(glass.ScrollEdge{Hard: true, Bottom: true, Background: p.bg})
 	edge.Opacity(edgeShown(edge, a.underBottom))
+	if carNarrow(c) {
+		a.compactPlayerBar(c, tr)
+		return
+	}
 	// The controls keep the middle, between sides that share what is left:
 	// narrower, the middle gives up to 140 DIPs, and what plays keeps room
 	// for its cover, some of its title and its heart.
@@ -463,6 +468,44 @@ func (a *app) playerBar(c *ui.Context) {
 				a.nowPlaying, a.npPane = true, paneQueue
 			}
 			a.volumeButton(c, p.text.Alpha(0.75))
+		})
+	})
+}
+
+// compactPlayerBar keeps the essential controls usable in a split-screen pane.
+func (a *app) compactPlayerBar(c *ui.Context, tr *music.Track) {
+	p, pl := a.pal, a.pl
+	ui.Column(c).Absolute().Left(0).Right(0).Bottom(0).Height(playerBarHeight).Padding(6, 10, 4, 10).Children(func() {
+		ui.Row(c).Grow(1).Gap(2).AlignItems(ui.Center).Children(func() {
+			info := ui.ButtonBase(c.Key("info")).Grow(1).Shrink(1).MinWidth(0).Label(T("Open Now Playing")).AlignItems(ui.Center)
+			info.Children(func() {
+				name := T("Not Playing")
+				if tr != nil {
+					name = tr.Name
+				}
+				ui.Text(c, name).FontSize(13).FontWeight(600).SingleLine().Shrink(1)
+			})
+			if info.Clicked() && tr != nil {
+				a.nowPlaying = true
+			}
+			if iconButton(c.Key("prev"), iconPrev, 16, p.text, T("Previous")).Clicked() {
+				pl.Prev()
+			}
+			if playButton(c.Key("play"), pl.Playing(), 22, p.text).Clicked() {
+				pl.TogglePlay()
+			}
+			if iconButton(c.Key("next"), iconNext, 16, p.text, T("Next")).Clicked() {
+				pl.Next()
+			}
+			if iconButton(c.Key("lyrics"), iconLyrics, 16, p.muted, T("Lyrics")).Clicked() && tr != nil {
+				a.nowPlaying, a.npPane = true, a.lyricsPaneChosen()
+			}
+			a.volumeButton(c, p.text.Alpha(0.75))
+		})
+		ui.Row(c).Gap(5).AlignItems(ui.Center).Children(func() {
+			ui.Text(c, clock(pl.Position())).FontSize(10).TextColor(p.faint).Width(32)
+			a.scrubber(c.Key("bar-scrub"), &a.barScrub, p.press, p.text.Alpha(0.75), 14, p.accent).Grow(1)
+			ui.Text(c, clock(pl.Duration())).FontSize(10).TextColor(p.faint).Width(32)
 		})
 	})
 }

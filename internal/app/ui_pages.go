@@ -18,7 +18,7 @@ const pagePad = 40
 // columns returns how many cards of at least min DIPs fit across the page.
 func (a *app) columns(c *ui.Context, min float32) int {
 	w, _ := c.Size()
-	inner := w - sidebarWidth - 2*pagePad
+	inner := w - sideWidth(w) - 2*pagePad
 	return max(2, int((inner+20)/(min+20)))
 }
 
@@ -101,6 +101,10 @@ func (a *app) homePage(c *ui.Context) {
 var pickFolders = func(a *app, got func([]string)) {
 	go func() {
 		paths, err := mygoOpenFolders(a)
+		if err != nil {
+			a.post(func() { a.toast = err.Error() })
+			return
+		}
 		if err == nil && len(paths) > 0 {
 			a.post(func() { got(paths) })
 		}
@@ -475,7 +479,7 @@ func (a *app) trackRow(c *ui.Context, tracks []music.Track, i int, covers bool, 
 	tr := &tracks[i]
 	w, _ := c.Size()
 	// An album's page has no column of the album its songs are on.
-	wide := w-sidebarWidth > 820 && a.route.page != pageAlbum
+	wide := w-sideWidth(w) > 820 && a.route.page != pageAlbum
 	playing := sameTrack(a.pl.Current(), tr)
 	row := ui.ButtonBase(c.Key(tr.ID)).Height(54).PaddingX(12).Gap(14).Radius(10).AlignItems(ui.Center).FocusRing(false).Label(tr.Name).
 		ContextMenu(a.songItems(tr, pid))

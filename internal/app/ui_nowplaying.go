@@ -2,6 +2,7 @@ package app
 
 import (
 	"math"
+	"runtime"
 	"time"
 
 	"github.com/egoist/mygo"
@@ -64,6 +65,9 @@ func (a *app) npAtRest(open bool) bool {
 // of the window: that would show it going over the sidebar's material
 // while the page above it hid it at once.
 func (a *app) nowPlayingLayer(c *ui.Context, open, settled bool) {
+	if runtime.GOOS == "android" && !open {
+		a.carControlsUntil = time.Time{}
+	}
 	w, h := c.Size()
 	layer := ui.Box(c.Key("now-playing-layer")).Absolute().Top(0).Left(0).Right(0).Bottom(0)
 	// Unless it grows out of the cover, an experiment, it slides up, or
@@ -172,7 +176,7 @@ func (a *app) npFromRect(w, h float32) ui.Rect {
 	if a.npFrom.W > 0 {
 		return a.npFrom
 	}
-	return ui.Rect{X: sidebarWidth + 21, Y: h - (playerBarHeight+48)/2, W: 48, H: 48}
+	return ui.Rect{X: sideWidth(w) + 21, Y: h - (playerBarHeight+48)/2, W: 48, H: 48}
 }
 
 // npMorph moves e, a cover of Now Playing, out of the player bar's cover
@@ -267,6 +271,21 @@ func (a *app) nowPlayingView(c *ui.Context) {
 		Background(bg).TextColor(white)
 	// The pointer is over the view whenever it is in the window.
 	pointerIn := root.Hovered()
+	if runtime.GOOS == "android" {
+		now := c.Now()
+		if a.carControlsUntil.IsZero() {
+			a.carControlsUntil = now.Add(4 * time.Second)
+		}
+		for _, touch := range root.Touches() {
+			if touch.Phase == ui.TouchBegan || touch.Phase == ui.TouchMoved || touch.Phase == ui.TouchEnded {
+				a.carControlsUntil = now.Add(4 * time.Second)
+			}
+		}
+		pointerIn = !a.pl.Playing() || now.Before(a.carControlsUntil)
+		if a.pl.Playing() && pointerIn {
+			c.After(a.carControlsUntil.Sub(now))
+		}
+	}
 	root.Children(func() {
 		// Its colors bloom out of the bar's cover as it opens.
 		bloom := ui.Box(c.Key("bloom")).Absolute().Top(0).Left(0).Right(0).Bottom(0).PassThrough()
@@ -341,13 +360,28 @@ func (a *app) nowPlayingBody(c *ui.Context, tr *music.Track, art *artwork, accen
 		// The cover leaves room above it for the tabs, starting as far
 		// under them as the wall's song does.
 		coverSize := min(side, h-436)
+		compact := runtime.GOOS == "android" && (h < 600 || w < 900)
+		if compact {
+			coverSize = max(64, min(side, h-300))
+		}
 		// The column is as wide as the cover, for the cover, what plays
 		// and the tabs over it to start at one edge, but wide enough for
 		// the controls.
 		side = max(coverSize, 280)
+		if runtime.GOOS == "android" && w < 900 {
+			side = max(coverSize, 220)
+		}
 		padX := npSideX(w)
 		a.npRise(reveal(npTabsRow(c, w), pointerIn), 0).Children(func() { a.paneTabs(c) })
-		ui.Row(c).Grow(1).Padding(0, padX, 44, padX).Gap(72).AlignItems(ui.Stretch).Children(func() {
+		bottomPad, titleTop, titleBottom, controlsTop, controlsBottom := float32(44), float32(36), float32(18), float32(14), float32(18)
+		if compact {
+			bottomPad, titleTop, titleBottom, controlsTop, controlsBottom = 8, 10, 8, 4, 6
+		}
+		gap := float32(72)
+		if runtime.GOOS == "android" && w < 900 {
+			gap = 24
+		}
+		ui.Row(c).Grow(1).Padding(0, padX, bottomPad, padX).Gap(gap).AlignItems(ui.Stretch).Children(func() {
 			ui.Column(c).Width(side).Gap(0).Children(func() {
 				// The column sits in the middle of its room, but never
 				// closer to the tabs than npCoverTop: what shows only at
@@ -360,7 +394,7 @@ func (a *app) nowPlayingBody(c *ui.Context, tr *music.Track, art *artwork, accen
 					a.npCover(c, tr, art, coverSize)
 				})
 
-				a.npRise(ui.Row(c).Gap(8).AlignItems(ui.Center).Margin(36, 0, 18, 0), 1).Children(func() {
+				a.npRise(ui.Row(c).Gap(8).AlignItems(ui.Center).Margin(titleTop, 0, titleBottom, 0), 1).Children(func() {
 					ui.Column(c).Grow(1).Shrink(1).MinWidth(0).Gap(4).Children(func() {
 						if r := pl.Radio(); r != "" {
 							a.radioChip(c, r)
@@ -385,7 +419,7 @@ func (a *app) nowPlayingBody(c *ui.Context, tr *music.Track, art *artwork, accen
 					}
 					ui.Text(c, status).FontSize(11).FontFeatures("tnum").TextColor(white.Alpha(0.5))
 				})
-				a.npRise(ui.Box(c).Margin(14, 0, 18, 0), 3).Children(func() {
+				a.npRise(ui.Box(c).Margin(controlsTop, 0, controlsBottom, 0), 3).Children(func() {
 					a.transport(c, white, white.Alpha(0.45), accent, 28)
 				})
 				a.npRise(ui.Row(c).Justify(ui.Center), 4).Children(func() {
@@ -429,6 +463,9 @@ const npMaxWidth = 1280
 // pane beside it are: in a wide window they keep together in the middle,
 // rather than the pane taking all the width the cover leaves.
 func npSideX(w float32) float32 {
+	if runtime.GOOS == "android" && w < 900 {
+		return 24
+	}
 	return max(72, (w-npMaxWidth)/2)
 }
 

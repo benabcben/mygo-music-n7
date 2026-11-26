@@ -1,6 +1,8 @@
 package app
 
 import (
+	"runtime"
+
 	"github.com/egoist/mygo"
 	"github.com/egoist/mygo/transfer"
 	"github.com/egoist/mygo/ui"
@@ -14,8 +16,16 @@ var copyText = func(text string) error { return mygo.Clipboard.Write(transfer.Te
 // songMenu is three dots that open the menu of tr.
 func (a *app) songMenu(c *ui.Context, tr *music.Track, size float32, color ui.Color) ui.Element {
 	b := iconButton(c, iconMore, size, color, T("More"))
-	b.Menu(a.songItems(tr, ""))
+	if runtime.GOOS == "android" {
+		a.carSongMenu(b, tr)
+	} else {
+		b.Menu(a.songItems(tr, ""))
+	}
 	return b
+}
+
+func (a *app) carSongMenu(b ui.Element, tr *music.Track) {
+	b.PopoverMenuButton(a.songItems(tr, ""))
 }
 
 // songItems builds the menu of what can be done with tr, behind its dots

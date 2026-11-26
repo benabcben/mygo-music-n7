@@ -2,6 +2,14 @@ package i18n
 
 // zhCN is the app's text in Simplified Chinese, by its English.
 var zhCN = map[string]string{
+	"About MyGo":                    "关于",
+	"About MyGo source and support": "关于 MyGo Music 版本 赞赏 原作者 GitHub 源代码",
+	"Car edition":                   "车机版",
+	"Thanks to egoist and all contributors for creating and sharing MyGo Music.": "感谢原作者 egoist 开发并开源 MyGo Music，以及所有贡献者的付出。",
+	"Original author's GitHub":     "原作者 GitHub",
+	"Car edition source code":      "车机版源代码",
+	"WeChat account":               "关注公众号",
+	"WeChat support":               "微信扫码赞赏",
 	"%.1f GB used":                 "已用 %.1f GB",
 	"%d MB used":                   "已用 %d MB",
 	"%d albums":                    "%d 张专辑",

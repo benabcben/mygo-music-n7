@@ -1,0 +1,9 @@
+QQ Music: https://github.com/dddaniel1/mygo-plugin-qqmusic
+Revision: 4bb04cc4d5f8ff2ea528a237c4fe9737b79eda87
+Local change: use player quality when no plugin-specific quality is configured.
+
+KuGou Music: https://github.com/dddaniel1/mygo-plugin-kugou
+Revision: 96e9b7669f7acb17be33bd2dacc5f3509b3941e8
+Local change: report the actual returned audio type instead of requested quality; guest fallback defaults to mp3.
+
+Both plugins retain their MIT license in their respective directories.

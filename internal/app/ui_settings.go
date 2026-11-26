@@ -488,7 +488,13 @@ func (a *app) settingsSections(c *ui.Context, p palette) []settingsSection {
 		})
 	})
 
-	if a.updates {
+	if runtime.GOOS == "android" {
+		add("about", T("About MyGo"), iconHeart, func(row settingsRow, block settingsBlock) {
+			block(T("About MyGo source and support"), func() {
+				a.carAbout(c, p)
+			})
+		})
+	} else if a.updates {
 		add("updates", T("Updates"), iconRefresh, func(row settingsRow, block settingsBlock) {
 			desc := T("Check for a new version once a day")
 			if t := lastUpdateCheck(); !t.IsZero() {

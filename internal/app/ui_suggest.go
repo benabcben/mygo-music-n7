@@ -115,7 +115,7 @@ func (a *app) searchField(c *ui.Context) {
 		pop := popoverColors(p.dark)
 		cb.Popup(func(panel ui.Element) {
 			panel.AttachTo(field, ui.AnchorBottomStart, ui.AnchorTopStart).
-				Margin(6, 0, 0, 0).Padding(5).Gap(1).MaxWidth(sidebarWidth+60).
+				Margin(6, 0, 0, 0).Padding(5).Gap(1).MaxWidth(currentSideWidth(c)+60).
 				Radius(12).Background(pop.fill).Border(0.5, pop.edge).
 				Shadow(0, 8, 24, -4, ui.RGBA(0, 0, 0, 0.2))
 			if w := field.Bounds().W; w > 0 {

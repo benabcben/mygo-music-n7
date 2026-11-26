@@ -1,8 +1,12 @@
 package app
 
 import (
+	"context"
 	"errors"
+	"runtime"
+
 	"log"
+	"mygo-music/internal/n7car"
 	"strings"
 	"time"
 
@@ -29,6 +33,15 @@ const (
 // header of the address the plugin asked for once the cookies it named are
 // all there, and closes the window. Closing it first is giving up.
 func (a *app) webSignIn(o plugin.WebSignIn) (string, error) {
+	if runtime.GOOS == "android" {
+		var result struct {
+			Cookie string `json:"cookie"`
+		}
+		if err := n7car.Call(context.Background(), "signin", map[string]any{"url": o.URL, "cookiesOf": o.CookiesOf, "until": o.Until, "userAgent": o.UserAgent}, &result); err != nil {
+			return "", err
+		}
+		return result.Cookie, nil
+	}
 	// Asked on the main thread: on Linux the first asking loads WebKitGTK and
 	// makes its default web context, and WebKit then takes the thread that did
 	// for its main one. Asked from here, the window made on the real main

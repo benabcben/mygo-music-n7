@@ -1,3 +1,7 @@
+# MyGo Music 车机版
+
+车机版本说明和构建方法见 [README-CAR.md](README-CAR.md)。本项目基于 [原作者的 MyGo Music](https://github.com/egoist/mygo-music)，下方保留上游说明。
+
 # MyGo Music
 
 A native desktop music player written in Go with [MyGo](https://github.com/egoist/mygo), no WebView. It plays your local files out of the box, and everything else comes from plugins.

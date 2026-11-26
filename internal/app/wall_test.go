@@ -183,3 +183,15 @@ func solidBitmap(col ui.Color) *ui.Bitmap {
 	}
 	return ui.NewBitmap(img)
 }
+
+func TestWallTapPlaysCover(t *testing.T) {
+	a, tt := wallApp(t, 20, 0)
+	r := find(t, tt, "歌005")
+	x, y := r.X+r.W/2, r.Y+r.H/2
+	tt.UsePointer(ui.PointerTouch, 0)
+	tt.ClickAt(x, y)
+	tt.Frame()
+	if got := a.pl.Current().Name; got != "歌005" {
+		t.Fatalf("tap played %s, want 歌005", got)
+	}
+}
