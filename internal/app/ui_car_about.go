@@ -51,16 +51,17 @@ func (a *app) carAbout(c *ui.Context, p palette) {
 
 func carReward(c *ui.Context, p palette) {
 	ui.Row(c).Gap(12).AlignItems(ui.Start).Justify(ui.Center).Children(func() {
-		carAboutCode(c, carAccountQR, T("WeChat account"), p)
-		carAboutCode(c, carRewardQR, T("WeChat support"), p)
+		carAboutCode(c, carAccountQR, T("WeChat account"), T("Search WeChat for bieji"), p)
+		carAboutCode(c, carRewardQR, T("Buy me a coffee"), T("Scan with WeChat to support"), p)
 	})
 }
 
-func carAboutCode(c *ui.Context, image ui.ImageSource, label string, p palette) {
-	ui.Column(c).Width(150).Padding(10, 10, 12, 10).Gap(7).Radius(14).Background(p.hover).AlignItems(ui.Center).Children(func() {
+func carAboutCode(c *ui.Context, image ui.ImageSource, label, subtitle string, p palette) {
+	ui.Column(c).Width(150).Padding(10, 10, 12, 10).Gap(5).Radius(14).Background(p.hover).AlignItems(ui.Center).Children(func() {
 		if image != nil {
 			ui.Image(c, image).Size(130, 130).Fit(ui.Contain).Label(label)
 		}
-		ui.Text(c, label).FontSize(13).TextColor(p.muted)
+		ui.Text(c, label).FontSize(13).FontWeight(500).TextColor(p.text)
+		ui.Text(c, subtitle).FontSize(11).TextColor(p.muted)
 	})
 }
