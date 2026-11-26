@@ -20,13 +20,17 @@ var carIconImage []byte
 var carAboutImagesOnce sync.Once
 var carAccountQR, carRewardQR, carAboutIcon ui.ImageSource
 
-// carAbout keeps the upstream project and the car edition clearly attributed.
-func (a *app) carAbout(c *ui.Context, p palette) {
+func ensureCarAboutImages() {
 	carAboutImagesOnce.Do(func() {
 		carAccountQR, _ = ui.DecodeImage(carAccountImage)
 		carRewardQR, _ = ui.DecodeImage(carRewardImage)
 		carAboutIcon, _ = ui.DecodeImage(carIconImage)
 	})
+}
+
+// carAbout keeps the upstream project and the car edition clearly attributed.
+func (a *app) carAbout(c *ui.Context, p palette) {
+	ensureCarAboutImages()
 	ui.Column(c).Padding(28, 24, 28, 24).Gap(16).AlignItems(ui.Center).Children(func() {
 		if carAboutIcon != nil {
 			ui.Image(c, carAboutIcon).Size(64, 64).Fit(ui.Contain).Label("MyGo Music")

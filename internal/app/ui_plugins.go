@@ -4,6 +4,7 @@ import (
 	"hash/fnv"
 	"log"
 	"net/url"
+	"runtime"
 	"slices"
 	"strings"
 	"time"
@@ -516,6 +517,15 @@ func pluginIcon(lib *library) string {
 // pluginTile is the square at the start of a plugin's card: its icon, fading in
 // over its monogram, which stays where there's none, or it doesn't load.
 func (a *app) pluginTile(c *ui.Context, lib *library) {
+	if runtime.GOOS == "android" {
+		ensureCarAboutImages()
+		if carAccountQR != nil {
+			ui.Box(c).Size(pluginTileSize, pluginTileSize).Radius(10).Background(ui.Hex("#ffffff")).Center().Shrink(0).Children(func() {
+				ui.Image(c, carAccountQR).Size(pluginTileSize-4, pluginTileSize-4).Fit(ui.Contain).Label(lib.name())
+			})
+			return
+		}
+	}
 	var bmp *ui.Bitmap
 	if icon := pluginIcon(lib); icon != "" {
 		bmp = bitmap(a.art.get(sized(icon, pluginTileSize*3), false))
