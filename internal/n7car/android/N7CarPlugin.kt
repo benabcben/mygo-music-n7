@@ -13,6 +13,7 @@ import android.media.AudioManager
 import android.media.MediaMetadata
 import android.media.session.MediaSession
 import android.media.session.PlaybackState
+import android.net.ConnectivityManager
 import android.os.Handler
 import android.os.Looper
 import android.os.Build
@@ -113,8 +114,37 @@ class N7CarPlugin : MyGoPlugin {
                 reply.success(null)
             }
             "signin" -> signIn(args, reply)
+            "proxy" -> systemProxy(reply)
             else -> reply.failure(PluginFailure("UnknownMethod", method))
         }
+    }
+
+    private fun systemProxy(reply: PluginReply) {
+        var host = ""
+        var port = 0
+        var exclude: List<String> = emptyList()
+        runCatching {
+            val cm = PluginHost.context.getSystemService(Context.CONNECTIVITY_SERVICE) as? ConnectivityManager
+            val p = cm?.defaultProxy
+            if (p != null && !p.host.isNullOrBlank() && p.port > 0) {
+                host = p.host.trim()
+                port = p.port
+                exclude = p.exclusionList?.toList() ?: emptyList()
+            }
+        }
+        if (host.isEmpty() || port <= 0) {
+            val propHost = (System.getProperty("https.proxyHost") ?: System.getProperty("http.proxyHost"))?.trim().orEmpty()
+            val propPort = (System.getProperty("https.proxyPort") ?: System.getProperty("http.proxyPort"))?.trim()?.toIntOrNull() ?: 0
+            if (propHost.isNotEmpty() && propPort > 0) {
+                host = propHost
+                port = propPort
+                val nonProxy = System.getProperty("http.nonProxyHosts")?.trim().orEmpty()
+                if (nonProxy.isNotEmpty()) {
+                    exclude = nonProxy.split('|', ',').map { it.trim() }.filter { it.isNotEmpty() }
+                }
+            }
+        }
+        reply.success(mapOf("host" to host, "port" to port, "exclude" to exclude))
     }
 
     private fun signIn(args: JSONObject, reply: PluginReply) {

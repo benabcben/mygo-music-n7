@@ -16,6 +16,7 @@ import (
 	"mygo-music/internal/i18n"
 	"mygo-music/internal/local"
 	"mygo-music/internal/music"
+	"mygo-music/internal/n7car"
 	"mygo-music/internal/player"
 	"mygo-music/internal/plugin"
 )
@@ -351,6 +352,7 @@ func (a *app) closeSources() {
 // Run runs the app until it quits.
 func Run() error {
 	if runtime.GOOS == "android" {
+		n7car.InstallSystemProxy()
 		// Keep the existing app-private data when the display name changes.
 		if dir, err := os.UserConfigDir(); err == nil {
 			mygo.App.SetPath(mygo.PathUserData, filepath.Join(dir, "MyGo Music N7"))
