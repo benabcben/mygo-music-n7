@@ -59,7 +59,9 @@ func carReward(c *ui.Context, p palette) {
 func carAboutCode(c *ui.Context, image ui.ImageSource, label, subtitle string, p palette) {
 	ui.Column(c).Width(150).Padding(10, 10, 12, 10).Gap(5).Radius(14).Background(p.hover).AlignItems(ui.Center).Children(func() {
 		if image != nil {
-			ui.Image(c, image).Size(130, 130).Fit(ui.Contain).Label(label)
+			ui.Box(c).Size(130, 130).Background(ui.Hex("#ffffff")).Center().Children(func() {
+				ui.Image(c, image).Size(130, 130).Fit(ui.Contain).Label(label)
+			})
 		}
 		ui.Text(c, label).FontSize(13).FontWeight(500).TextColor(p.text)
 		ui.Text(c, subtitle).FontSize(11).TextColor(p.muted)
