@@ -1,5 +1,11 @@
 # AGENTS.md
 
+## Car release versions
+
+- Publish at most one user-facing version per calendar day in Asia/Shanghai.
+- Further changes on the same day update that day's release rather than creating another version number. Keep the released source tag and APK matched.
+- Increase Android versionCode for each replacement build so it can cover-install earlier builds, even when the displayed version stays the same.
+
 ## Tests
 
 Only write a test for behaviour that can actually break. If the code under test could change without the test noticing, or the test would fail on a harmless rewording, don't write it.
