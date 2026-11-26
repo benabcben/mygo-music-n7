@@ -14,7 +14,7 @@ export default ({ command }: { command: string }) => ({
   },
   android: {
     minSdk: 26,
-    versionCode: 150,
+    versionCode: 152,
     permissions: ["READ_EXTERNAL_STORAGE", "READ_MEDIA_AUDIO", "ACCESS_NETWORK_STATE"],
   },
   macos: {
