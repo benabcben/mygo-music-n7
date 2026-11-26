@@ -626,11 +626,54 @@ export async function suggest({ query }) {
   return out.slice(0, 10);
 }
 
+function playlistFromCloud(sp) {
+  if (!sp || !sp.global_collection_id) return null;
+  const pl = {
+    id: String(sp.global_collection_id),
+    name: sp.name || sp.specialname || "",
+    imageUrl: sizeUrl(sp.pic || sp.imgurl || sp.flexible_cover, 480),
+    owner: sp.list_create_username || sp.nickname || host.storage.get("nickname") || "",
+  };
+  const cache = mapGet(PLC);
+  cache[pl.id] = { name: pl.name, imageUrl: pl.imageUrl, owner: pl.owner };
+  const keys = Object.keys(cache);
+  if (keys.length > PLC_MAX) {
+    for (const k of keys.slice(0, keys.length - PLC_MAX)) delete cache[k];
+  }
+  mapSet(PLC, cache);
+  return pl;
+}
+
 // The app's Playlists page asks every source for the listener's playlists.
-// KuGou cloud playlists need the cloud-list protocol, so for now none are
-// listed from here.
 export async function playlists() {
-  return [];
+  const token = host.storage.get("token");
+  const userid = host.storage.get("userid");
+  if (!token || !userid) return [];
+  const uid = Number(userid) || userid;
+  const out = [];
+  for (let page = 1; page <= 10; page++) {
+    const r = await kg({
+      url: "/v7/get_all_list",
+      method: "POST",
+      headers: { "x-router": "cloudlist.service.kugou.com" },
+      params: { plat: 1, userid: uid, token },
+      data: {
+        userid: uid,
+        token,
+        total_ver: 979,
+        type: 2,
+        page,
+        pagesize: 100,
+      },
+    });
+    const list = r?.data?.info || [];
+    for (const item of list) {
+      const pl = playlistFromCloud(item);
+      if (pl) out.push(pl);
+    }
+    if (list.length < 100) break;
+  }
+  return out;
 }
 
 // A playlist's page: what its card was clicked for. The cover and name come

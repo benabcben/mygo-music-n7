@@ -61,10 +61,10 @@ type settings struct {
 	LyricsStage bool `json:"lyricsStage"`
 	// StageStyle is how the stage sets its lyrics (stageStyles): empty for
 	// Folia's classic, or the id of another of its visualizers.
-	StageStyle string `json:"stageStyle,omitempty"`
+	StageStyle string `json:"stageStyle"`
 	// PlayerStyle is how Now Playing shows the song playing
 	// (playerStyles): empty for its cover, or a retro player's id.
-	PlayerStyle string `json:"playerStyle,omitempty"`
+	PlayerStyle string `json:"playerStyle"`
 	// StageSparks throws sparks off each word on the stage as it is sung,
 	// whatever its style.
 	StageSparks bool `json:"stageSparks,omitempty"`

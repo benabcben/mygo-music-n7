@@ -6,6 +6,7 @@ import android.content.BroadcastReceiver
 import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
+import android.content.ServiceConnection
 import android.graphics.BitmapFactory
 import android.media.AudioAttributes
 import android.media.AudioFocusRequest
@@ -14,9 +15,13 @@ import android.media.MediaMetadata
 import android.media.session.MediaSession
 import android.media.session.PlaybackState
 import android.net.ConnectivityManager
+import android.os.Binder
 import android.os.Handler
+import android.os.IBinder
+import android.os.IInterface
 import android.os.Looper
 import android.os.Build
+import android.os.Parcel
 import android.util.Base64
 import android.view.KeyEvent
 import android.view.ViewGroup
@@ -29,8 +34,146 @@ import android.widget.Button
 import org.json.JSONObject
 
 class N7CarPlugin : MyGoPlugin {
-    companion object { var live: N7CarPlugin? = null }
+    companion object {
+        var live: N7CarPlugin? = null
+        val pendingVoice = ArrayList<Pair<String, String>>()
+        val voiceBroadcastMethods = mapOf(
+            "com.byd.action.AUTOVOICE_PLAY_RANDOM" to "playRandom",
+            "com.byd.action.AUTOVOICE_RECOMMEND" to "playRecommend",
+            "com.byd.action.AUTOVOICE_PLAY_LATELY" to "playLately",
+            "com.byd.action.AUTOVOICE_PLAY_FAVORITE" to "playFavorite",
+            "com.byd.action.AUTOVOICE_PLAY_SONG_SHEET" to "playPlaylist",
+            "com.byd.action.AUTOVOICE_SEARCH_PLUS" to "searchMusic",
+            "com.byd.action.AUTOVOICE_PLAY_MODE" to "setPlayPattern"
+        )
+        private const val AIDL_DESC = "com.bydsdk.autovoice.IBydMediaAIDL"
+        private const val LISTENER_DESC = "com.bydsdk.autovoice.IBydMediaListener"
+        private const val CALLBACK_DESC = "com.bydsdk.autovoice.IBydMediaCallback"
+    }
     private var media: MediaSession? = null
+    private var autoVoiceCallback: IBinder? = null
+    private var autoVoiceBound = false
+    private val mainHandler = Handler(Looper.getMainLooper())
+    private val autoVoiceListener = object : Binder() {
+        init {
+            val binderRef = this
+            attachInterface(object : IInterface {
+                override fun asBinder(): IBinder = binderRef
+            }, LISTENER_DESC)
+        }
+        override fun onTransact(code: Int, data: Parcel, reply: Parcel?, flags: Int): Boolean {
+            return when (code) {
+                INTERFACE_TRANSACTION -> {
+                    reply?.writeString(LISTENER_DESC)
+                    true
+                }
+                1 -> {
+                    data.enforceInterface(LISTENER_DESC)
+                    autoVoiceCallback = data.readStrongBinder()
+                    reply?.writeNoException()
+                    true
+                }
+                2 -> {
+                    data.enforceInterface(LISTENER_DESC)
+                    val method = data.readString().orEmpty()
+                    val json = data.readString().orEmpty()
+                    dispatchAutoVoice(method, json, acknowledge = false)
+                    reply?.writeNoException()
+                    true
+                }
+                3 -> {
+                    data.enforceInterface(LISTENER_DESC)
+                    val method = data.readString().orEmpty()
+                    val json = data.readString().orEmpty()
+                    dispatchAutoVoice(method, json, acknowledge = true)
+                    reply?.writeNoException()
+                    true
+                }
+                4 -> {
+                    data.enforceInterface(LISTENER_DESC)
+                    data.readString()
+                    data.readString()
+                    reply?.writeNoException()
+                    true
+                }
+                else -> super.onTransact(code, data, reply, flags)
+            }
+        }
+    }
+    private val autoVoiceConn = object : ServiceConnection {
+        override fun onServiceConnected(name: ComponentName?, service: IBinder?) {
+            val binder = service ?: return
+            runCatching {
+                val data = Parcel.obtain()
+                val reply = Parcel.obtain()
+                try {
+                    data.writeInterfaceToken(AIDL_DESC)
+                    data.writeString(PluginHost.context.packageName)
+                    data.writeIntArray(intArrayOf(1001))
+                    data.writeStrongBinder(autoVoiceListener)
+                    binder.transact(1, data, reply, 0)
+                    reply.readException()
+                } finally {
+                    reply.recycle()
+                    data.recycle()
+                }
+            }
+        }
+        override fun onServiceDisconnected(name: ComponentName?) {
+            autoVoiceBound = false
+            mainHandler.postDelayed({ bindAutoVoice() }, 2000)
+        }
+    }
+    private fun bindAutoVoice() {
+        if (autoVoiceBound) return
+        runCatching {
+            val intent = Intent("com.byd.action.AUTOVOICE_MEDIA_REGISTER").setPackage("com.byd.autovoice")
+            autoVoiceBound = PluginHost.context.bindService(intent, autoVoiceConn, Context.BIND_AUTO_CREATE)
+        }
+    }
+    private fun replyAutoVoice(resultJson: String) {
+        val cb = autoVoiceCallback ?: return
+        runCatching {
+            val data = Parcel.obtain()
+            val reply = Parcel.obtain()
+            try {
+                data.writeInterfaceToken(CALLBACK_DESC)
+                data.writeString(PluginHost.context.packageName)
+                data.writeString(resultJson)
+                cb.transact(1, data, reply, 0)
+                reply.readException()
+            } finally {
+                reply.recycle()
+                data.recycle()
+            }
+        }
+    }
+    private fun dispatchAutoVoice(method: String, json: String, acknowledge: Boolean) {
+        mainHandler.post {
+            when (method.lowercase()) {
+                "pause", "stop" -> command("pause")
+                "next", "playnext" -> command("next")
+                "previous", "prev", "pre", "playprev", "playprevious" -> command("previous")
+                else -> PluginHost.emit("n7car", "voice", mapOf("method" to method, "json" to json))
+            }
+            if (acknowledge) replyAutoVoice("""{"code":0,"message":"ok"}""")
+        }
+    }
+    private val bornAt = android.os.SystemClock.uptimeMillis()
+    fun voiceFromBroadcast(method: String, json: String) {
+        // The Go side needs a moment after a cold start before it can handle voice commands.
+        val wait = (bornAt + 3500 - android.os.SystemClock.uptimeMillis()).coerceAtLeast(0)
+        mainHandler.postDelayed({ dispatchAutoVoice(method, json, acknowledge = false) }, wait)
+    }
+    init {
+        live = this
+        mainHandler.post { bindAutoVoice() }
+        synchronized(pendingVoice) {
+            val items = pendingVoice.toList()
+            pendingVoice.clear()
+            for ((m, j) in items) voiceFromBroadcast(m, j)
+        }
+    }
     private val audioManager by lazy { PluginHost.context.getSystemService(Context.AUDIO_SERVICE) as AudioManager }
     private var hasFocus = false
     private var focusRequested = false
@@ -204,5 +347,17 @@ class N7MediaButtonReceiver : BroadcastReceiver() {
         @Suppress("DEPRECATION")
         val event = intent.getParcelableExtra<KeyEvent>(Intent.EXTRA_KEY_EVENT) ?: return
         N7CarPlugin.live?.mediaButton(event)
+    }
+}
+
+class N7VoiceReceiver : BroadcastReceiver() {
+    override fun onReceive(context: Context, intent: Intent) {
+        val method = N7CarPlugin.voiceBroadcastMethods[intent.action] ?: return
+        val obj = JSONObject()
+        intent.extras?.let { b -> for (k in b.keySet()) runCatching { obj.put(k, b.get(k)?.toString()) } }
+        android.util.Log.d("MyGoAutoVoice", "broadcast ${intent.action} extras=$obj")
+        val plugin = N7CarPlugin.live
+        if (plugin != null) plugin.voiceFromBroadcast(method, obj.toString())
+        else synchronized(N7CarPlugin.pendingVoice) { N7CarPlugin.pendingVoice.add(method to obj.toString()) }
     }
 }

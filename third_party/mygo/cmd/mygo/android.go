@@ -234,6 +234,7 @@ func androidManifest(c *Config, plugins mobilePlugins) []byte {
 	}
 	var b strings.Builder
 	b.WriteString(`<manifest xmlns:android="http://schemas.android.com/apk/res/android">` + "\n")
+	b.WriteString("    <queries><package android:name=\"com.byd.autovoice\" /></queries>\n")
 	for _, p := range perms {
 		fmt.Fprintf(&b, "    <uses-permission android:name=%q />\n", p)
 	}

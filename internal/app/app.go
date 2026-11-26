@@ -391,6 +391,7 @@ func Run() error {
 		// made, and the view asks the player what plays.
 		a.art = newArtCache(a.post)
 		a.pl = player.New(a.post)
+		a.initVoice()
 		a.pl.Quiet = func(fn func()) { mygo.RunOnMain(fn) }
 		a.pl.Source = a.sourceByID
 		a.pl.Failed = a.sourceFailed

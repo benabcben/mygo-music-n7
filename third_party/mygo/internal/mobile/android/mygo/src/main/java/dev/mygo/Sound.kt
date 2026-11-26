@@ -12,6 +12,7 @@ import java.nio.ByteOrder
  */
 object Sound {
     private var track: AudioTrack? = null
+    private var floatBuf = FloatArray(0)
 
     fun open(c: AudioOpenCall): AudioOpenReply {
         val r = AudioOpenReply()
@@ -22,8 +23,8 @@ object Sound {
             val asked = (c.rate * c.ahead / 1000 * 8).toInt()
             val t = AudioTrack.Builder()
                 .setAudioAttributes(AudioAttributes.Builder().setUsage(AudioAttributes.USAGE_MEDIA).setContentType(AudioAttributes.CONTENT_TYPE_MUSIC).build())
-                .setAudioFormat(format).setBufferSizeInBytes(maxOf(least, asked)).setTransferMode(AudioTrack.MODE_STREAM)
-                .setPerformanceMode(AudioTrack.PERFORMANCE_MODE_LOW_LATENCY).build()
+                .setAudioFormat(format).setBufferSizeInBytes(maxOf(least, asked, c.rate.toInt() * 8 / 5)).setTransferMode(AudioTrack.MODE_STREAM)
+                .setPerformanceMode(AudioTrack.PERFORMANCE_MODE_POWER_SAVING).build()
             t.play()
             track = t
         } catch (e: Exception) {
@@ -40,9 +41,14 @@ object Sound {
             return r
         }
         val b = ByteBuffer.wrap(c.samples).order(ByteOrder.LITTLE_ENDIAN).asFloatBuffer()
-        val a = FloatArray(b.remaining())
-        b.get(a)
-        val n = t.write(a, 0, a.size, AudioTrack.WRITE_BLOCKING)
+        val count = b.remaining()
+        var a = floatBuf
+        if (a.size < count) {
+            a = FloatArray(count)
+            floatBuf = a
+        }
+        b.get(a, 0, count)
+        val n = t.write(a, 0, count, AudioTrack.WRITE_BLOCKING)
         if (n < 0) r.error = "audio: AudioTrack error $n"
         return r
     }

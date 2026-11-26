@@ -3,6 +3,7 @@ package audio
 import (
 	"math"
 	"slices"
+	"time"
 )
 
 // voices are the voices playing, or fading out, under mu.
@@ -14,6 +15,16 @@ var (
 	mixed   int64
 	unheard int64
 	held    int64
+
+	// Wall-clock smoothing of heard() when a large-period output (such as
+	// Android DEEP_BUFFER) wakes in bursts rather than every 10 ms. Only
+	// active when !testMode.
+	heardLive   bool
+	heardSlow   bool
+	heardAnchor int64
+	heardWall   time.Time
+	lastMixWall time.Time
+	lastMixRaw  int64
 )
 
 // setHeld tells the mixer that a device opened which holds n frames ahead
@@ -23,12 +34,71 @@ func setHeld(n int64) {
 	defer mu.Unlock()
 	if !testMode {
 		held, unheard = n, 0
+		heardLive, heardSlow = false, false
+		heardAnchor, lastMixRaw = mixed, mixed
+		heardWall, lastMixWall = time.Time{}, time.Time{}
 	}
 }
 
 // heard returns the output's frame heard now: the frames mixed before it
 // are.
-func heard() int64 { return mixed - unheard }
+func heard() int64 {
+	if testMode || !heardLive {
+		return mixed - unheard
+	}
+	return smoothHeardLocked(time.Now())
+}
+
+func smoothHeardLocked(now time.Time) int64 {
+	raw := mixed - unheard
+	elapsed := now.Sub(heardWall).Seconds()
+	if elapsed < 0 {
+		elapsed = 0
+	}
+	rate := float64(sampleRate)
+	if heardSlow {
+		rate *= 0.95
+	}
+	est := heardAnchor + int64(elapsed*rate)
+	if est < raw {
+		return raw
+	}
+	if cap := raw + held; est > cap {
+		return cap
+	}
+	return est
+}
+
+func updateHeardClockAt(now time.Time, active bool) {
+	raw := mixed - unheard
+	if !active || unheard < held {
+		heardLive, heardSlow = false, false
+		heardAnchor, lastMixRaw = raw, raw
+		heardWall, lastMixWall = now, now
+		return
+	}
+	if !heardLive {
+		heardLive, heardSlow = true, false
+		heardAnchor, lastMixRaw = raw, raw
+		heardWall, lastMixWall = now, now
+		return
+	}
+	cur := smoothHeardLocked(now)
+	gap := now.Sub(lastMixWall)
+	if raw >= cur {
+		heardAnchor = raw
+		heardWall = now
+		heardSlow = false
+	} else if gap > 12*time.Millisecond {
+		// Previous burst's last fill ended at lastMixWall with raw=lastMixRaw;
+		// if our clock was slightly ahead even at rest, gently slow down to absorb skew.
+		heardSlow = cur-int64(gap.Seconds()*sampleRate) > lastMixRaw+sampleRate/200
+		heardAnchor = cur
+		heardWall = now
+	}
+	lastMixRaw = raw
+	lastMixWall = now
+}
 
 // rampFrames is how long volume changes, fades in and fades out take: 5 ms.
 const rampFrames = sampleRate / 200
@@ -438,6 +508,9 @@ func mixLocked(out []float32) bool {
 	f := int64(len(out) / channels)
 	mixed += f
 	unheard = min(unheard+f, held)
+	if !testMode {
+		updateHeardClockAt(time.Now(), n > 0)
+	}
 	for i, s := range out {
 		out[i] = min(max(s, -1), 1)
 	}

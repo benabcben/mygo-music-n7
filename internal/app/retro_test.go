@@ -1,6 +1,7 @@
 package app
 
 import (
+	"encoding/json"
 	"testing"
 
 	"github.com/egoist/mygo/ui"
@@ -41,5 +42,27 @@ func TestFlingRetroPlayer(t *testing.T) {
 		if id := a.pl.Current().ID; id != "3" {
 			t.Errorf("%s flung left: playing %s", style.id, id)
 		}
+	}
+}
+
+// TestPlayerStyleCoverPersists checks that choosing Cover ("") survives saving
+// and reloading over Android's "vinyl" default.
+func TestPlayerStyleCoverPersists(t *testing.T) {
+	s := n7DefaultSettings(defaultSettings())
+	s.PlayerStyle = ""
+	s.StageStyle = ""
+	b, err := json.Marshal(s)
+	if err != nil {
+		t.Fatal(err)
+	}
+	reloaded := n7DefaultSettings(defaultSettings())
+	if err := json.Unmarshal(b, &reloaded); err != nil {
+		t.Fatal(err)
+	}
+	if reloaded.PlayerStyle != "" {
+		t.Fatalf("reloaded PlayerStyle = %q, want empty (Cover)", reloaded.PlayerStyle)
+	}
+	if reloaded.StageStyle != "" {
+		t.Fatalf("reloaded StageStyle = %q, want empty", reloaded.StageStyle)
 	}
 }

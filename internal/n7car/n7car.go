@@ -24,3 +24,16 @@ func OnCommand(fn func(string, time.Duration)) {
 		}
 	})
 }
+
+// OnVoice registers fn to receive BYD AutoVoice commands beyond basic transport controls.
+func OnVoice(fn func(method, params string)) {
+	mygo.Native("n7car").On("voice", func(data []byte) {
+		var e struct {
+			Method string `json:"method"`
+			JSON   string `json:"json"`
+		}
+		if json.Unmarshal(data, &e) == nil && e.Method != "" {
+			mygo.RunOnMain(func() { fn(e.Method, e.JSON) })
+		}
+	})
+}

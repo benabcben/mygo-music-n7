@@ -3,9 +3,9 @@
 // scheme of its own, for the installed app to keep mygo-music:// links.
 export default ({ command }: { command: string }) => ({
   name: "MyGo Music",
-  identifier: "net.bieji.mygo.n7",
+  identifier: "cn.kuwo.kwmusiccar",
   slug: "mygo-music",
-  version: "0.1.9",
+  version: "0.1.10",
   out: "build",
   urlSchemes: [command === "dev" ? "mygo-music-dev" : "mygo-music"],
   updates: {
@@ -14,7 +14,7 @@ export default ({ command }: { command: string }) => ({
   },
   android: {
     minSdk: 26,
-    versionCode: 154,
+    versionCode: 165,
     permissions: ["READ_EXTERNAL_STORAGE", "READ_MEDIA_AUDIO", "ACCESS_NETWORK_STATE"],
   },
   macos: {

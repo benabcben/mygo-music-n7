@@ -19,6 +19,9 @@ func seedN7Plugins(dir string) error {
 	if err := upgradeBundledYouTube(dir); err != nil {
 		return err
 	}
+	if err := upgradeBundledKugou(dir); err != nil {
+		return err
+	}
 	marker := filepath.Join(filepath.Dir(dir), ".n7-plugins-installed-v6")
 	if _, err := os.Stat(marker); err == nil {
 		return nil
@@ -121,6 +124,25 @@ func seedN7Plugins(dir string) error {
 		return err
 	}
 	return os.WriteFile(marker, []byte("1\n"), 0600)
+}
+
+func upgradeBundledKugou(dir string) error {
+	main := filepath.Join(dir, "kugou", "index.js")
+	data, err := os.ReadFile(main)
+	if os.IsNotExist(err) {
+		return nil
+	}
+	if err != nil {
+		return err
+	}
+	if !strings.Contains(string(data), "KuGou cloud playlists need the cloud-list protocol") {
+		return nil
+	}
+	fresh, err := n7Plugins.ReadFile("bundled_plugins/kugou/index.js")
+	if err != nil {
+		return err
+	}
+	return os.WriteFile(main, fresh, 0600)
 }
 
 // Upgrade only the exact older bundled source, leaving user-modified plugins
