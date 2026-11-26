@@ -5,7 +5,7 @@ var zhCN = map[string]string{
 	"About MyGo":                    "关于",
 	"About MyGo source and support": "关于 MyGo Music 版本 赞赏 原作者 GitHub 源代码",
 	"Car edition":                   "车机版",
-	"Thanks to egoist and all contributors for creating and sharing MyGo Music.": "感谢原作者 egoist 开发并开源 MyGo Music，以及所有贡献者的付出。",
+	"Ported from MyGo Music to Android car systems. Thanks to original author egoist and all contributors.": "本应用基于 MyGo Music 移植至 Android 车机。感谢原作者 egoist 及所有贡献者。",
 	"Original author's GitHub":     "原作者 GitHub",
 	"Car edition source code":      "车机版源代码",
 	"WeChat account":               "关注公众号",

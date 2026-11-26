@@ -22,7 +22,7 @@ func (a *app) carAbout(c *ui.Context, p palette) {
 	ui.Column(c).Padding(28, 24, 28, 24).Gap(16).AlignItems(ui.Center).Children(func() {
 		ui.Text(c, "MyGo Music").FontSize(24).FontWeight(700)
 		ui.Text(c, T("Car edition")+" · "+mygo.App.Version()).FontSize(13).TextColor(p.muted)
-		ui.Text(c, T("Thanks to egoist and all contributors for creating and sharing MyGo Music.")).FontSize(14).TextColor(p.muted).LineHeight(1.5).TextAlign(ui.Center)
+		ui.Text(c, T("Ported from MyGo Music to Android car systems. Thanks to original author egoist and all contributors.")).FontSize(14).TextColor(p.muted).LineHeight(1.5).TextAlign(ui.Center)
 		ui.Column(c).Gap(8).AlignItems(ui.Center).Children(func() {
 			if ui.Button(c.Key("about-upstream"), T("Original author's GitHub")).Clicked() {
 				_ = mygo.Shell.OpenExternal("https://github.com/egoist/mygo-music")
